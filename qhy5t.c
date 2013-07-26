@@ -30,7 +30,12 @@
 
 #define dprintf if(debug > 0) printf
 #define ddprintf if(debug > 1) printf
+
+#ifdef DEBUG
+int debug=1;
+#else
 int debug=0;
+#endif
 
 #define READ 0xC0
 #define WRITE 0x40
