@@ -23,11 +23,13 @@
  * 
  */
 
-//to build: gcc -o qhy5tviewer qhy5t.c qhy5tviewer.c -lSDL -lpthread -lusb
+//to build:
+//gcc -o qhy5tviewer qhy5t.c qhy5tviewer.c -lSDL -lpthread -lusb -lcfitsio
 
 #include <SDL/SDL.h>
 #include "qhy5t.h"
 #include <getopt.h>
+#include <fitsio.h>
 
 //pix position relative in source image [rgrg...gbgb]
 #define SRCTL(ptr) (*(ptr-w-1))
@@ -120,6 +122,55 @@ void write_ppm6(void * data, int width, int height, char *basename){
 	fclose(fp);
 }
 
+void printerror( int status)
+{
+	if (status)
+	{
+		fits_report_error(stderr, status);
+		exit(status); /* terminate the program, returning error status *///HAY QUE VE ESTO!!!
+	}
+	return;
+}
+
+void write_fits(void * array, int width, int height, char *fname )
+{
+	fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
+	int status;
+	long  fpixel, nelements;
+	char filename[256] = "!";	// ! for deleting existing file and create new
+	strcat(filename,fname);
+	int bitpix   =  BYTE_IMG; /* 8-bit unsigned short pixel values       */
+	long naxis    =   3;  /* 2-dimensional image                            */
+	long naxes[3];   	/* image is 300 pixels wide by 200 rows */
+	naxes[0]=width;
+	naxes[1]=height;
+	naxes[2]=3;
+	status = 0;         /* initialize status before calling fitsio routines */
+
+	if (fits_create_file(&fptr, filename, &status)) /* create new FITS file */
+	printerror( status );           /* call printerror if error occurs */
+	/* write the required keywords for the primary array image.     */
+	/* Since bitpix = USHORT_IMG, this will cause cfitsio to create */
+	/* a FITS image with BITPIX = 16 (signed short integers) with   */
+	/* BSCALE = 1.0 and BZERO = 32768.  This is the convention that */
+	/* FITS uses to store unsigned integers.  Note that the BSCALE  */
+	/* and BZERO keywords will be automatically written by cfitsio  */
+	/* in this case.                                                */
+	if (fits_create_img(fptr, bitpix, naxis, naxes, &status)) printerror( status );
+	fpixel = 1;                               /* first pixel to write      */
+	nelements = naxes[0] * naxes[1];          /* number of pixels to write *///y ACA??? cuantos pixels escribo?
+	/* write the array of unsigned integers to the FITS file */
+	if (fits_write_img(fptr, TBYTE, fpixel, nelements, array, &status)) printerror( status );
+	/* write another optional keyword to the header */
+	/* Note that the ADDRESS of the value is passed in the routine */
+	if (fits_update_key(fptr, TSTRING, "SOFTWARE", "qhy5tviewer","", &status)) printerror( status );
+	if (fits_update_key(fptr, TSTRING, "CAMERA", "QHY5T","", &status)) printerror( status );
+	//if ( fits_update_key(fptr, TLONG,   "GAIN", &gain,"", &status) )     printerror( status );
+	//if ( fits_update_key(fptr, TLONG,   "EXPOSURE", &etime, "Total Exposure Time", &status) ) printerror( status );
+	if (fits_close_file(fptr, &status)) printerror( status );  /* close the file */
+	//return (status == 0);
+}
+
 void show_help(char * progname){
 	printf("%s [options]\n", progname);
 	printf("\t\t-x/--width <width>                specify width (default: 800)\n");
@@ -127,13 +178,14 @@ void show_help(char * progname){
 	printf("\t\t-g/--gain <gain>                  specify gain in permilles (default 10%%)\n");
 	printf("\t\t-b/--binning <bin>                specify the binning mode (2x2 or default: 1x1)\n");
 	printf("\t\t-t/--exposure <exposure>          specify exposure in msec (default: 100)\n");
-	printf("\t\t-f/--file <filename>              specify filename to write to (if none, SDL output only)\n");
+	printf("\t\t-o/--file <filename>              specify filename to write to (if none, SDL output only)\n");
 	printf("\t\t-c/--count <count>                specify how many sequential images to take. If -c isn't especified,\n");
 	printf("\t\t                                  then the output file will be exactly <filename> and will be a fits file. \n"); 
 	printf("\t\t                                  (This is for QHYImager compatibility). Else, will be <filename>0000x.<fmt>\n");
 	printf("\t\t-m/--format <fmt>                 specify the file type (default: ppm, else fits file will be created.)\n");
 	printf("\t\t-d/--debug                        enable debugging\n");
-	printf("\t\t-h//-help                         show this message\n");
+	printf("\t\t-f//--fits                        output to FITS file (default PPM)\n");
+	printf("\t\t-h//--help                         show this message\n");
 	exit(0);
 }
 
@@ -162,8 +214,11 @@ int main (int argc, char *argv[]){
 	char imagename[256];
 	int debug=0;
 	qhy5t_driver *qhy5t;
+	int crossair=0;
 	
-	int writeppm=0;
+	void (*writefunction)(void *, int, int, char *) = write_ppm;
+	
+	int write=0;
 	/*Parsing main arguments*/
 	struct option long_options[] = {
 		{"exposure" ,required_argument, NULL, 't'},
@@ -173,17 +228,19 @@ int main (int argc, char *argv[]){
 		{"width", required_argument, NULL, 'x'},
 		{"height", required_argument, NULL, 'y'},
 		{"debug", required_argument, NULL, 'd'},
-		{"file", required_argument, NULL, 'f'},
+		{"file", required_argument, NULL, 'o'},
 		{"count", required_argument, NULL, 'c'},
 		{"format", required_argument, NULL, 'm'},
 		{"help", no_argument , NULL, 'h'},
+		{"fits", no_argument , NULL, 'f'},
+		{"crossair", no_argument , NULL, 'X'},
 		{0, 0, 0, 0}
 	};
 
 	while (1) {
 		char c;
 		c = getopt_long (argc, argv, 
-                     "t:g:b:k:x:y:df:c:m:h",
+                     "t:g:b:k:x:y:do:c:m:h:fX:",
                      long_options, NULL);
 		if(c == EOF)
 			break;
@@ -211,9 +268,9 @@ int main (int argc, char *argv[]){
 			height = strtol(optarg, NULL, 0);
 			offh = (1536 - height) / 2;
 			break;
-		case 'f':
+		case 'o':
 			strncpy(basename, optarg, 255);
-			writeppm=0;
+			write=0;
 			break;
 		case 'd':
 			debug = 1;
@@ -227,6 +284,13 @@ int main (int argc, char *argv[]){
 			break;
 		case 'h':
 			show_help(argv[0]);
+			break;
+		case 'f':
+			writefunction = write_fits;
+			strncpy(fmt, "fits",4);
+			break;
+		case 'X':
+			crossair=1;
 			break;
 		}
 	}
@@ -283,7 +347,7 @@ int main (int argc, char *argv[]){
 				switch (event.key.keysym.sym){
 				//toggle grabe frame
 				case SDLK_s:
-					writeppm = !writeppm;
+					write = !write;
 					break;
 				//quit viewer
 				case SDLK_q:
@@ -311,10 +375,10 @@ int main (int argc, char *argv[]){
 		SDL_UnlockSurface(hello);
 		
 		
-		if (writeppm){
+		if (write){
 			sprintf(imagename, "%s%05d.%s", basename, count, fmt);
 			printf("Capturing %s\n", imagename);
-			write_ppm(data, qhy5t->width, qhy5t->height, imagename);
+			writefunction(data, qhy5t->width, qhy5t->height, imagename);
 			count++;
 		}
 		if (SDL_BlitSurface(hello, NULL, screen, NULL)){
