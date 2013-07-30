@@ -27,6 +27,7 @@
 //gcc -o qhy5tviewer qhy5t.c qhy5tviewer.c -lSDL -lpthread -lusb -lcfitsio
 
 #include <SDL/SDL.h>
+#include <SDL/SDL_image.h>
 #include "qhy5t.h"
 #include <getopt.h>
 #include <fitsio.h>
@@ -171,6 +172,19 @@ void write_fits(void * array, int width, int height, char *fname )
 	//return (status == 0);
 }
 
+SDL_Surface * load_crossair(unsigned int angle){
+	static SDL_Surface * crosses[256];
+	char xpath[64];
+	if (crosses[angle] == NULL){
+		sprintf(xpath, "images/crossair%d.png", angle);
+		crosses[angle] = IMG_Load (xpath);
+		if (crosses[angle]==NULL){
+			printf ( "Can't load image IMG_Load: %s\n", IMG_GetError());
+		}
+	}
+	return crosses[angle];
+}
+
 void show_help(char * progname){
 	printf("%s [options]\n", progname);
 	printf("\t\t-x/--width <width>                specify width (default: 800)\n");
@@ -215,6 +229,7 @@ int main (int argc, char *argv[]){
 	int debug=0;
 	qhy5t_driver *qhy5t;
 	int crossair=0;
+	unsigned int angle=0;
 	
 	void (*writefunction)(void *, int, int, char *) = write_ppm;
 	
@@ -240,7 +255,7 @@ int main (int argc, char *argv[]){
 	while (1) {
 		char c;
 		c = getopt_long (argc, argv, 
-                     "t:g:b:k:x:y:do:c:m:h:fX:",
+                     "t:g:b:k:x:y:do:c:m:hfX",
                      long_options, NULL);
 		if(c == EOF)
 			break;
@@ -290,7 +305,8 @@ int main (int argc, char *argv[]){
 			strncpy(fmt, "fits",4);
 			break;
 		case 'X':
-			crossair=1;
+			crossair = 1;
+			angle = 0;
 			break;
 		}
 	}
@@ -307,8 +323,9 @@ int main (int argc, char *argv[]){
 		exit(1);
 	}
 	//SDL artifacts initialization...
-	SDL_Surface* hello = NULL;
-	SDL_Surface* screen = NULL;
+	SDL_Surface * hello = NULL;
+	SDL_Surface * screen = NULL;
+	SDL_Surface * xair = NULL;
 	SDL_Event event;
 	int quit=0;
 	SDL_Init(SDL_INIT_EVERYTHING);
@@ -353,6 +370,16 @@ int main (int argc, char *argv[]){
 				case SDLK_q:
 					quit = 1;
 					break;
+				case SDLK_MINUS:
+					crossair = 1;
+					angle = (angle - 1) % 256;
+					break;
+				case SDLK_PLUS:
+					crossair = 1;
+					angle = (angle + 1) % 256;
+					break;
+				case SDLK_x:
+					crossair = !(crossair);
 				}
 				break;
 			case SDL_QUIT:
@@ -383,9 +410,19 @@ int main (int argc, char *argv[]){
 		}
 		if (SDL_BlitSurface(hello, NULL, screen, NULL)){
 			printf("%s\n", SDL_GetError());
-			SDL_UnlockSurface(hello);
-			SDL_UnlockSurface(screen);
-			SDL_BlitSurface(hello, NULL, screen, NULL);
+		}
+		if(crossair){
+			xair = load_crossair(angle);
+			if (xair != NULL){
+				SDL_Rect recdst = {(width/2)-150, (height/2)-150, 0, 0};
+				if (SDL_BlitSurface(xair, NULL, screen, &recdst)){
+					printf("%s\n", SDL_GetError());
+				}
+			}
+			else{
+				printf("Can't load the crossair\n");
+				crossair = 0;
+			}
 		}
 		SDL_Flip(screen);
 	}
