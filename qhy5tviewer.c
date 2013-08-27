@@ -31,6 +31,7 @@
 #include "qhy5t.h"
 #include <getopt.h>
 #include <fitsio.h>
+#define __VERSION__ "0.1"
 
 //pix position relative in source image [rgrg...gbgb]
 #define SRCTL(ptr) (*(ptr-w-1))
@@ -109,8 +110,10 @@ void * debayer_data_jwack(void * data, void * dest, qhy5t_driver * qhy5t){
 	}
 	return dest;
 }
-void write_ppm6(void * data, int width, int height, char *basename){
+void write_ppm6(void * data, qhy5t_driver * qhy5t, char *basename){
 	FILE *fp;
+	unsigned int width = qhy5t->width;
+	unsigned int height = qhy5t->height;
 	char * filename = malloc(strlen(basename) + 15);
 	sprintf(filename, "%s%s","_dby_", basename );
 	fp = fopen(filename, "w");
@@ -123,6 +126,10 @@ void write_ppm6(void * data, int width, int height, char *basename){
 	fclose(fp);
 }
 
+void writeppm(void * data, qhy5t_driver * qhy5t, char *basename){
+	write_ppm(data, qhy5t->width, qhy5t->height, basename);
+}
+
 void printerror( int status)
 {
 	if (status)
@@ -133,23 +140,41 @@ void printerror( int status)
 	return;
 }
 
-void write_fits(void * array, int width, int height, char *fname )
+void write_fits(void * array, qhy5t_driver * qhy5t, char *fname )
 {
-	fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
+	fitsfile *fptr;
 	int status;
+	unsigned int width = qhy5t->width;
+	unsigned int height = qhy5t->height;
 	long  fpixel, nelements;
 	char filename[256] = "!";	// ! for deleting existing file and create new
-	strcat(filename,fname);
-	int bitpix   =  BYTE_IMG; /* 8-bit unsigned short pixel values       */
-	long naxis    =   3;  /* 2-dimensional image                            */
-	long naxes[3];   	/* image is 300 pixels wide by 200 rows */
+	strncat(filename,fname,255);
+	
+/*	//forcing 16bits image for fits
+	printf("puto el que lee %d\n",qhy5t->bpp);
+	uint16_t * array;
+	if (qhy5t->bpp == 8){
+		int i;
+		uint8_t * im = data;
+		array = malloc(width*height*2);
+		for (i=0; i < width*height; i++){
+			array[i*2] = (uint16_t)(im[i]<<7);
+		}
+	}
+	else{
+		array = data;
+	}*/
+	
+	int bitpix = BYTE_IMG; /* 8-bit unsigned short pixel values       */
+	long naxis = 2; /* 2-dimensional image RAW image */
+	long naxes[2]; 
 	naxes[0]=width;
 	naxes[1]=height;
-	naxes[2]=3;
-	status = 0;         /* initialize status before calling fitsio routines */
+	status = 0;
 
-	if (fits_create_file(&fptr, filename, &status)) /* create new FITS file */
-	printerror( status );           /* call printerror if error occurs */
+	if (fits_create_file(&fptr, filename, &status)){
+		printerror(status);
+	}
 	/* write the required keywords for the primary array image.     */
 	/* Since bitpix = USHORT_IMG, this will cause cfitsio to create */
 	/* a FITS image with BITPIX = 16 (signed short integers) with   */
@@ -157,19 +182,24 @@ void write_fits(void * array, int width, int height, char *fname )
 	/* FITS uses to store unsigned integers.  Note that the BSCALE  */
 	/* and BZERO keywords will be automatically written by cfitsio  */
 	/* in this case.                                                */
-	if (fits_create_img(fptr, bitpix, naxis, naxes, &status)) printerror( status );
+	if (fits_create_img(fptr, bitpix, naxis, naxes, &status)){
+		printerror(status);
+	}
 	fpixel = 1;                               /* first pixel to write      */
 	nelements = naxes[0] * naxes[1];          /* number of pixels to write *///y ACA??? cuantos pixels escribo?
 	/* write the array of unsigned integers to the FITS file */
-	if (fits_write_img(fptr, TBYTE, fpixel, nelements, array, &status)) printerror( status );
-	/* write another optional keyword to the header */
-	/* Note that the ADDRESS of the value is passed in the routine */
-	if (fits_update_key(fptr, TSTRING, "SOFTWARE", "qhy5tviewer","", &status)) printerror( status );
-	if (fits_update_key(fptr, TSTRING, "CAMERA", "QHY5T","", &status)) printerror( status );
-	//if ( fits_update_key(fptr, TLONG,   "GAIN", &gain,"", &status) )     printerror( status );
-	//if ( fits_update_key(fptr, TLONG,   "EXPOSURE", &etime, "Total Exposure Time", &status) ) printerror( status );
-	if (fits_close_file(fptr, &status)) printerror( status );  /* close the file */
-	//return (status == 0);
+	if (fits_write_img(fptr, TBYTE, fpixel, nelements, array, &status)){
+		printerror(status);
+	}
+	if (fits_update_key(fptr, TSTRING, "SOFTWARE", "qhy5tviewer","", &status)){
+		printerror(status);
+	}
+	if (fits_update_key(fptr, TSTRING, "CAMERA", "QHY5T","", &status)){
+		printerror(status);
+	}
+	if (fits_close_file(fptr, &status)){
+		printerror(status);
+	}
 }
 
 SDL_Surface * load_crossair(unsigned int angle){
@@ -218,7 +248,7 @@ int main (int argc, char *argv[]){
 	int offh = (1536 - height) / 2;
 	int count = 0;
 	int bin = 1; //binmode default 1x1
-	int bpp = 1;
+	int bpp = 8;
 	int hblank = 142;
 	unsigned int vblank = 25;
 	unsigned int gain = 100;
@@ -231,7 +261,7 @@ int main (int argc, char *argv[]){
 	int crossair=0;
 	unsigned int angle=0;
 	
-	void (*writefunction)(void *, int, int, char *) = write_ppm;
+	void (*writefunction)(void *, qhy5t_driver *, char *) = writeppm;
 	
 	int write=0;
 	/*Parsing main arguments*/
@@ -405,7 +435,7 @@ int main (int argc, char *argv[]){
 		if (write){
 			sprintf(imagename, "%s%05d.%s", basename, count, fmt);
 			printf("Capturing %s\n", imagename);
-			writefunction(data, qhy5t->width, qhy5t->height, imagename);
+			writefunction(data, qhy5t, imagename);
 			count++;
 		}
 		if (SDL_BlitSurface(hello, NULL, screen, NULL)){
