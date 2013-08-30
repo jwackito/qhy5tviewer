@@ -31,7 +31,7 @@
 #include "qhy5t.h"
 #include <getopt.h>
 #include <fitsio.h>
-#define __VERSION__ "0.1"
+//#define __VERSION__ "0.1"
 
 //pix position relative in source image [rgrg...gbgb]
 #define SRCTL(ptr) (*(ptr-w-1))
@@ -201,7 +201,7 @@ void write_fits(void * array, qhy5t_driver * qhy5t, char *fname )
 		printerror(status);
 	}
 }
-
+/*
 SDL_Surface * load_crossair(unsigned int angle){
 	static SDL_Surface * crosses[256];
 	char xpath[64];
@@ -214,6 +214,13 @@ SDL_Surface * load_crossair(unsigned int angle){
 	}
 	return crosses[angle];
 }
+*/
+void * makedark (qhy5t_driver * qhy5t){
+	void * dark = NULL;
+	printf("");
+}
+
+void substract(const void * data, void * darkframe);
 
 void show_help(char * progname){
 	printf("%s [options]\n", progname);
@@ -260,6 +267,11 @@ int main (int argc, char *argv[]){
 	qhy5t_driver *qhy5t;
 	int crossair=0;
 	unsigned int angle=0;
+	
+	void * data=NULL;
+	//debayerized data pointer
+	void * debdata = NULL;
+	void * darkframe = NULL;
 	
 	void (*writefunction)(void *, qhy5t_driver *, char *) = writeppm;
 	
@@ -380,9 +392,8 @@ int main (int argc, char *argv[]){
 	qhy5t_reconnect(qhy5t);
 	qhy5t_programcamera(qhy5t, 0);
 	qhy5t_start_exposure(qhy5t);
-	void * data=NULL;
-	//debayerized data pointer
-	void * debdata = calloc(qhy5t->framesize*3,1);
+	
+	debdata = calloc(qhy5t->framesize*3,1);
 	while (!quit){
 		//process SDL events
 		while( SDL_PollEvent( &event ) ){
@@ -409,7 +420,14 @@ int main (int argc, char *argv[]){
 					angle = (angle + 1) % 256;
 					break;
 				case SDLK_x:
-					crossair = !(crossair);
+					//crossair = !(crossair);
+					break;
+				}
+				case SDLK_k://Toggle dark frame substraction
+					if (darkframe == NULL)
+						darkframe = makedark(qhy5t);
+					else
+						darkframe == NULL;
 				}
 				break;
 			case SDL_QUIT:
@@ -426,6 +444,11 @@ int main (int argc, char *argv[]){
 			qhy5tviewer_exit(hello, qhy5t);
 			return 1;
 		}
+		
+		if (darkframe != NULL){
+			substract(data, darkframe);
+		}
+		
 		SDL_LockSurface(hello);
 		debdata = debayer_data_jwack(data, debdata, qhy5t);
 		hello->pixels = debdata;
@@ -441,7 +464,7 @@ int main (int argc, char *argv[]){
 		if (SDL_BlitSurface(hello, NULL, screen, NULL)){
 			printf("%s\n", SDL_GetError());
 		}
-		if(crossair){
+		/*if(crossair){
 			xair = load_crossair(angle);
 			if (xair != NULL){
 				SDL_Rect recdst = {(width/2)-150, (height/2)-150, 0, 0};
@@ -453,7 +476,7 @@ int main (int argc, char *argv[]){
 				printf("Can't load the crossair\n");
 				crossair = 0;
 			}
-		}
+		}*/
 		SDL_Flip(screen);
 	}
 	qhy5tviewer_exit(hello, qhy5t);
