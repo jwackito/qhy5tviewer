@@ -401,6 +401,66 @@ int qhy5t_set_gain(int gain){
 *******************************************************/
 
 /******************************************************
+* Mount Guiding commands ************************/
+
+void guide_command(qhy5t_driver * qhy5t, uint16_t cmd, uint16_t pulsetimex, uint16_t pulsetimey){
+	uint16_t duration[2] = {0, 0};
+	if (pulsetimex != 0xFFFFFFFF) pulsetimex *=10;
+	if (pulsetimey != 0xFFFFFFFF) pulsetimey *=10;
+
+	duration[0] = pulsetimex;
+	duration[1] = pulsetimey;
+	
+	//camera_write(0x10,(char *)&info[0],8,(uint16_t)GC,0);
+	int status = ctrl_msg(qhy5t->handle, WRITE, 0x10, 0, cmd, (char *)&duration, sizeof(duration));
+	printf("Status = %d\ncommand = %d\n", status, cmd);
+}
+
+int qhy5_timed_move(qhy5t_driver *qhy5t, int direction, int duration_msec){
+	///From Geoffrey Hausheer
+	unsigned int ret;
+	int duration[2] = {0, 0};
+	int cmd;
+
+	if (! (direction & (QHY_NORTH | QHY_SOUTH | QHY_EAST | QHY_WEST))) {
+		fprintf(stderr, "No direction specified to qhy5_timed_move\n");
+		return 1;
+	}
+	if (duration_msec == 0) {
+		//cancel quiding
+		if ((direction & (QHY_NORTH | QHY_SOUTH)) &&
+		    (direction & (QHY_EAST | QHY_WEST)))
+		{
+			cmd = 0x18;
+		} else if(direction & (QHY_NORTH | QHY_SOUTH)) {
+			cmd = 0x21;
+		} else {
+			cmd = 0x22;
+		}
+		printf("Cancel command requested\n");
+		return ctrl_msg(qhy5t->handle, 0xc2, cmd, 0, 0, (char *)&ret, sizeof(ret));
+	}
+	switch (direction){
+	case QHY_NORTH:
+	case QHY_SOUTH:
+		duration[1] = duration_msec;
+		break;
+	case QHY_WEST:
+	case QHY_EAST:
+		duration[0] = duration_msec;
+		break;
+	}
+	cmd &= direction;
+	
+	int status = ctrl_msg(qhy5t->handle, WRITE, 0x10, 0, cmd, (char *)&duration, sizeof(duration));
+	printf("Status = %d\ndirection = %d\ncommand = %d\n", status, direction, cmd);
+	return status;
+}
+
+/** END Mount Guiding commands ******
+*******************************************************/
+
+/******************************************************
 * Image manipution and mapping ************************/
 
 void * qhy5t_read_exposure(qhy5t_driver *qhy5t){

@@ -422,14 +422,30 @@ int main (int argc, char *argv[]){
 				case SDLK_x:
 					//crossair = !(crossair);
 					break;
-				}
 				case SDLK_k://Toggle dark frame substraction
 					if (darkframe == NULL)
 						darkframe = makedark(qhy5t);
 					else
 						darkframe == NULL;
+					break;
+				case SDLK_1:
+					qhy5_timed_move(qhy5t, QHY_NORTH, 2000);
+					//guide_command(qhy5t, QHY_NORTH, 1, 1);
+					break;
+				case SDLK_2:
+					qhy5_timed_move(qhy5t, QHY_SOUTH, 2000);
+					//guide_command(qhy5t, QHY_SOUTH, 1, 1);
+					break;
+				case SDLK_3:
+					qhy5_timed_move(qhy5t, QHY_EAST, 2000);
+					//guide_command(qhy5t, QHY_EAST, 1, 1);
+					break;
+				case SDLK_4:
+					qhy5_timed_move(qhy5t, 128, 2000);
+					//guide_command(qhy5t, QHY_WEST, 1, 1);
+					break;
 				}
-				break;
+			break;
 			case SDL_QUIT:
 				quit = 1;
 				break;
@@ -446,7 +462,7 @@ int main (int argc, char *argv[]){
 		}
 		
 		if (darkframe != NULL){
-			substract(data, darkframe);
+			//substract(data, darkframe);
 		}
 		
 		SDL_LockSurface(hello);

@@ -25,7 +25,12 @@
 #include <string.h>
 #include <usb.h>
 #include <pthread.h>
-
+enum {
+	QHY_EAST  = 0x10,
+	QHY_NORTH = 0x20,
+	QHY_SOUTH = 0x40,
+	QHY_WEST  = 0x80,
+};
 /******************************************************
 ******* Device handling (locate, open, close)**********/
 typedef struct  {
@@ -66,6 +71,10 @@ void * qhy5t_read_exposure(qhy5t_driver *qhy5t);
 int qhy5t_stopcapture(qhy5t_driver * qhy5t);
 
 int qhy5t_close(qhy5t_driver *qhy5t);
+
+void guide_command(qhy5t_driver * qhy5t, uint16_t command, uint16_t pulsetimex, uint16_t pulstimey);
+
+int qhy5_timed_move(qhy5t_driver *qhy5t, int direction, int duration_msec);
 
 /** END Device handling (locate, open, close)******/
 
