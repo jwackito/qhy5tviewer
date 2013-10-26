@@ -416,46 +416,51 @@ void guide_command(qhy5t_driver * qhy5t, uint16_t cmd, uint16_t pulsetimex, uint
 	printf("Status = %d\ncommand = %d\n", status, cmd);
 }
 
-int qhy5_timed_move(qhy5t_driver *qhy5t, int direction, int duration_msec){
-	///From Geoffrey Hausheer
-	unsigned int ret;
-	int duration[2] = {0, 0};
+int qhy5t_timed_move(qhy5t_driver *qhy5t, int direction, int duration_msec){
+	
+	int16_t duration[2] = {0, 0};
 	int cmd;
 
 	if (! (direction & (QHY_NORTH | QHY_SOUTH | QHY_EAST | QHY_WEST))) {
-		fprintf(stderr, "No direction specified to qhy5_timed_move\n");
+		fprintf(stderr, "No direction specified to qhy5t_timed_move\n");
 		return 1;
 	}
-	if (duration_msec == 0) {
-		//cancel quiding
-		if ((direction & (QHY_NORTH | QHY_SOUTH)) &&
-		    (direction & (QHY_EAST | QHY_WEST)))
-		{
-			cmd = 0x18;
-		} else if(direction & (QHY_NORTH | QHY_SOUTH)) {
-			cmd = 0x21;
-		} else {
-			cmd = 0x22;
+
+	if (duration_msec > 0){
+		switch (direction){
+		case QHY_NORTH:
+		case QHY_SOUTH:
+			duration[1] = duration_msec;
+			break;
+		case QHY_WEST:
+		case QHY_EAST:
+			duration[0] = duration_msec;
+			break;
 		}
-		printf("Cancel command requested\n");
-		return ctrl_msg(qhy5t->handle, 0xc2, cmd, 0, 0, (char *)&ret, sizeof(ret));
-	}
-	switch (direction){
-	case QHY_NORTH:
-	case QHY_SOUTH:
-		duration[1] = duration_msec;
-		break;
-	case QHY_WEST:
-	case QHY_EAST:
-		duration[0] = duration_msec;
-		break;
 	}
 	cmd &= direction;
 	
-	int status = ctrl_msg(qhy5t->handle, WRITE, 0x10, 0, cmd, (char *)&duration, sizeof(duration));
-	printf("Status = %d\ndirection = %d\ncommand = %d\n", status, direction, cmd);
-	return status;
+	return ctrl_msg(qhy5t->handle, WRITE, 0x10, 0, cmd, (char *)&duration, sizeof(duration));
 }
+
+int qhy5t_cancel_move(qhy5t_driver * qhy5t){
+	///cancel quiding
+	///From Geoffrey Hausheer for QHY5
+	uint16_t ret;
+	int cmd = 0x18;
+	/**if ((direction & (QHY_NORTH | QHY_SOUTH)) &&
+		(direction & (QHY_EAST | QHY_WEST)))
+	{
+		cmd = 0x18;
+	} else if(direction & (QHY_NORTH | QHY_SOUTH)) {
+		cmd = 0x21;
+	} else {
+		cmd = 0x22;
+	}*/
+	printf("Cancel guiding command requested\n");
+	return ctrl_msg(qhy5t->handle, READ, 0, 0, cmd, (char *)&ret, sizeof(ret));
+}
+
 
 /** END Mount Guiding commands ******
 *******************************************************/

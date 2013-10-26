@@ -25,12 +25,13 @@
 #include <string.h>
 #include <usb.h>
 #include <pthread.h>
-enum {
-	QHY_EAST  = 0x10,
-	QHY_NORTH = 0x20,
-	QHY_SOUTH = 0x40,
-	QHY_WEST  = 0x80,
-};
+
+
+#define QHY_EAST  0x10
+#define QHY_NORTH 0x20
+#define QHY_SOUTH 0x40
+#define QHY_WEST  0x80
+
 /******************************************************
 ******* Device handling (locate, open, close)**********/
 typedef struct  {

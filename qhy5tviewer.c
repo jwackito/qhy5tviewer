@@ -24,13 +24,14 @@
  */
 
 //to build:
-//gcc -o qhy5tviewer qhy5t.c qhy5tviewer.c -lSDL -lpthread -lusb -lcfitsio
+//gcc -o qhy5tviewer qhy5t.c qhy5tviewer.c -lSDL -lpthread -lusb -lcfitsio -lSDL_image
 
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
 #include "qhy5t.h"
 #include <getopt.h>
 #include <fitsio.h>
+#include "imanal.h"
 //#define __VERSION__ "0.1"
 
 //pix position relative in source image [rgrg...gbgb]
@@ -201,7 +202,7 @@ void write_fits(void * array, qhy5t_driver * qhy5t, char *fname )
 		printerror(status);
 	}
 }
-/*
+
 SDL_Surface * load_crossair(unsigned int angle){
 	static SDL_Surface * crosses[256];
 	char xpath[64];
@@ -214,13 +215,13 @@ SDL_Surface * load_crossair(unsigned int angle){
 	}
 	return crosses[angle];
 }
-*/
+
 void * makedark (qhy5t_driver * qhy5t){
 	void * dark = NULL;
 	printf("");
 }
 
-void substract(const void * data, void * darkframe);
+//void substract(const void * data, void * darkframe);
 
 void show_help(char * progname){
 	printf("%s [options]\n", progname);
@@ -267,6 +268,7 @@ int main (int argc, char *argv[]){
 	qhy5t_driver *qhy5t;
 	int crossair=0;
 	unsigned int angle=0;
+	int paintstars = 0;
 	
 	void * data=NULL;
 	//debayerized data pointer
@@ -420,29 +422,35 @@ int main (int argc, char *argv[]){
 					angle = (angle + 1) % 256;
 					break;
 				case SDLK_x:
-					//crossair = !(crossair);
+					crossair = !(crossair);
 					break;
-				case SDLK_k://Toggle dark frame substraction
+				/*case SDLK_k://Toggle dark frame substraction
 					if (darkframe == NULL)
 						darkframe = makedark(qhy5t);
 					else
 						darkframe == NULL;
+					break;*/
+				case SDLK_p:
+					paintstars = !paintstars;
 					break;
-				case SDLK_1:
-					qhy5_timed_move(qhy5t, QHY_NORTH, 2000);
+				case SDLK_UP:
+					qhy5t_timed_move(qhy5t, QHY_NORTH, 100);
 					//guide_command(qhy5t, QHY_NORTH, 1, 1);
 					break;
-				case SDLK_2:
-					qhy5_timed_move(qhy5t, QHY_SOUTH, 2000);
+				case SDLK_DOWN:
+					qhy5t_timed_move(qhy5t, QHY_SOUTH, 100);
 					//guide_command(qhy5t, QHY_SOUTH, 1, 1);
 					break;
-				case SDLK_3:
-					qhy5_timed_move(qhy5t, QHY_EAST, 2000);
+				case SDLK_RIGHT:
+					qhy5t_timed_move(qhy5t, QHY_EAST, 100);
 					//guide_command(qhy5t, QHY_EAST, 1, 1);
 					break;
-				case SDLK_4:
-					qhy5_timed_move(qhy5t, 128, 2000);
+				case SDLK_LEFT:
+					qhy5t_timed_move(qhy5t, QHY_WEST, 100);
 					//guide_command(qhy5t, QHY_WEST, 1, 1);
+					break;
+				case SDLK_SPACE:
+					qhy5t_cancel_move(qhy5t);
 					break;
 				}
 			break;
@@ -470,8 +478,11 @@ int main (int argc, char *argv[]){
 		hello->pixels = debdata;
 		SDL_UnlockSurface(hello);
 		
+		if (paintstars){
+			
+		}
 		
-		if (write){
+		if (write){ //always write a raw image, without debayer or any other process
 			sprintf(imagename, "%s%05d.%s", basename, count, fmt);
 			printf("Capturing %s\n", imagename);
 			writefunction(data, qhy5t, imagename);
@@ -480,7 +491,9 @@ int main (int argc, char *argv[]){
 		if (SDL_BlitSurface(hello, NULL, screen, NULL)){
 			printf("%s\n", SDL_GetError());
 		}
-		/*if(crossair){
+		
+		
+		if(crossair){
 			xair = load_crossair(angle);
 			if (xair != NULL){
 				SDL_Rect recdst = {(width/2)-150, (height/2)-150, 0, 0};
@@ -492,7 +505,7 @@ int main (int argc, char *argv[]){
 				printf("Can't load the crossair\n");
 				crossair = 0;
 			}
-		}*/
+		}
 		SDL_Flip(screen);
 	}
 	qhy5tviewer_exit(hello, qhy5t);
