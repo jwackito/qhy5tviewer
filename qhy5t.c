@@ -418,8 +418,8 @@ void guide_command(qhy5t_driver * qhy5t, uint16_t cmd, uint16_t pulsetimex, uint
 
 int qhy5t_timed_move(qhy5t_driver *qhy5t, int direction, int duration_msec){
 	
-	int16_t duration[2] = {0, 0};
-	int cmd;
+	uint16_t duration[2] = {0, 0};
+	uint16_t cmd;
 
 	if (! (direction & (QHY_NORTH | QHY_SOUTH | QHY_EAST | QHY_WEST))) {
 		fprintf(stderr, "No direction specified to qhy5t_timed_move\n");
