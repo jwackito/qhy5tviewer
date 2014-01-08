@@ -1,9 +1,9 @@
-/*
+/**
  * qhy5tviewer
  * 
  * Simple viewer and grabber for QHY5T camera
  * 
- * Copyright 2013 Joaquin Bogado <joaquinbogado at gmail.com>
+ * Copyright 2013-2014 Joaquin Bogado <joaquinbogado at gmail.com>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
  * MA 02110-1301, USA.
  * 
  * 
- */
+ **/
 
 //to build:
 //gcc -o qhy5tviewer qhy5t.c qhy5tviewer.c -lSDL -lpthread -lusb -lcfitsio -lSDL_image

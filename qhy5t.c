@@ -1,5 +1,6 @@
 /*******************************************************************************
-  Copyright(c) 2012-2013 Joaquin Bogado joaquinbogado at gmail.com 
+  Copyright(c) 2012-2013-2014 Joaquin Bogado joaquinbogado at gmail.com 
+  Code based on the QHY5 Linux driver from
   Copyright(c) 2009 Geoffrey Hausheer. All rights reserved.
   Code Based on the QHY5TDLL Windows Driver From
   Copyright(c) 2007-2009, Tom Van den Eede
