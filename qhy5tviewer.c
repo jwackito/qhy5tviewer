@@ -227,7 +227,7 @@ void show_help(char * progname){
 	printf("%s [options]\n", progname);
 	printf("\t\t-x/--width <width>                specify width (default: 800)\n");
 	printf("\t\t-y/--height <height>              specify height (default: 600)\n");
-	printf("\t\t-g/--gain <gain>                  specify gain in permilles (default 10%%)\n");
+	printf("\t\t-g/--gain <gain>                  specify gain [0-128] (default 1)\n");
 	printf("\t\t-b/--binning <bin>                specify the binning mode (2x2 or default: 1x1)\n");
 	printf("\t\t-t/--exposure <exposure>          specify exposure in msec (default: 100)\n");
 	printf("\t\t-o/--file <filename>              specify filename to write to (if none, SDL output only)\n");
@@ -259,7 +259,7 @@ int main (int argc, char *argv[]){
 	int bpp = 8;
 	int hblank = 142;
 	unsigned int vblank = 25;
-	unsigned int gain = 100;
+	unsigned int gain = 1;
 	unsigned int etime = 100;
 	char fmt[10] = "ppm";
 	char basename[256] = "image";
@@ -308,7 +308,7 @@ int main (int argc, char *argv[]){
 			etime = strtol(optarg, NULL, 0);
 			break;
 		case 'g':
-			gain = strtol(optarg, NULL, 0);
+			gain = atoi(optarg);
 			//Gain calculations for QHY5T from the datasheet
 			//gain value must be a per mil
 			gain = qhy5t_set_gain(gain);

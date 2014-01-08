@@ -329,7 +329,7 @@ reprogram:	if (memcmp(buffer, keep,64)) {
 	
 }
 
-void *  qhy5t_exposure_thread(void * ptr){
+void * qhy5t_exposure_thread(void * ptr){
 	qhy5t_driver * qhy5t = (qhy5t_driver *)ptr;
 	int result;
 	int timeout = qhy5t->etime + 5000;
@@ -388,12 +388,30 @@ void qhy5t_start_exposure(qhy5t_driver * qhy5t){
 	pthread_create( &expo_thread, NULL, qhy5t_exposure_thread, (void*) qhy5t);
 }
 
-int qhy5t_set_gain(int gain){
+/*int qhy5t_set_gain(int gain){
 	gain = gain%1001;
 	gain = (gain * 8192)/1000;
 	if (gain >= 32) {gain += 32;}
 	if (gain >= 128) {gain += 128;}
 	return gain&(~0x80A0);
+}*/
+int qhy5t_set_gain(int gain){
+//de los valores recomendados del datasheet del sensor
+	if (gain <= 0){
+		return 0x0008;
+	}
+	if (gain <= 24){ // gain 1 - 4, step 0.125
+		return 0x0008 + gain;
+	}
+	if (gain <= 24 + 15){ //gain 4.25 - 8, step 0.25
+		return 0x0051 + (gain - 24);
+	}
+	if (gain <= 24 + 15 + 128){ // gain 9 - 128, step 1
+		return 0x60 + ((gain - 24 - 15) << 7);
+	}
+	if (gain > 24 + 15 + 128){
+		return 0x7860;
+	}
 }
 
 
@@ -503,7 +521,7 @@ void show_help(char * progname){
 	printf("%s [options]\n", progname);
 	printf("\t\t-x/--width <width>                specify width (default: 2048)\n");
 	printf("\t\t-y/--height <height>              specify height (default: 1536)\n");
-	printf("\t\t-g/--gain <gain>                  specify gain in permilles (default 10%%)\n");
+	printf("\t\t-g/--gain <gain>                  specify gain [0-167] (default 1)\n");
 	printf("\t\t-b/--binning <bin>                specify the binning mode (2x2 or default: 1x1)\n");
 	printf("\t\t-t/--exposure <exposure>          specify exposure in msec (default: 100)\n");
 	printf("\t\t-f/--file <filename>              specify filename to write to\n");
@@ -528,7 +546,7 @@ int main (int argc,char **argv){
 	int bpp = 1;
 	int hblank = 142;
 	unsigned int vblank = 25;
-	unsigned int gain = 100;
+	unsigned int gain = 1;
 	unsigned int etime = 100;
 	char fmt[10] = "ppm";
 	char basename[256] = "image";
