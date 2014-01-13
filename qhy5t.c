@@ -171,28 +171,23 @@ int ctrl_msg(usb_dev_handle *handle, unsigned char request_type, unsigned char r
 int qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, uint16_t y, uint8_t bin, 
 					uint16_t gg1, uint16_t gb, uint16_t gr, uint16_t gg2, uint16_t vblank, uint16_t hblank, uint8_t bpp, uint16_t etime){
 
-	if (w >= 4 && w <=2048)
-		qhy5t->width = w;
-	if (h >= 4 && h <=1536)
-		qhy5t->height = h;
-	if (x >= 0 && x <=2048)
-		qhy5t->offw = x;
-	if (y >= 0 && y <=1536)
-		qhy5t->offh = y;
-	if (bin > 0 && bin < 3)
-		qhy5t->binmode = bin;
-	qhy5t->gg1 = gg1;
-	qhy5t->gb = gb;
-	qhy5t->gr = gr;
-	qhy5t->gg2 = gg2;
+	w = qhy5t->width = (w >= 4 && w <=2048) ? w : 2048;
+	h = qhy5t->height = (h >= 4 && h <=1536) ? h : 1536;
+	qhy5t->offw =  (x >= 0 && x <=(2048 - w)) ? x : (2048 - w) / 2;
+	qhy5t->offh =  (y >= 0 && y <=(1536 - h)) ? y : (1536 - h) / 2;
+	qhy5t->binmode = 1;
+	qhy5t->gg1 = (gg1 > 0 && gg1 < 168) ? gg1 : 1;
+	qhy5t->gb = (gb > 0 && gb < 168) ? gb : 1;
+	qhy5t->gr = (gr > 0 && gr < 168) ? gr : 1;
+	qhy5t->gg2 = (gg2 > 0 && gg2 < 168) ? gg2 : 1;
 	qhy5t->vblank = vblank;
 	qhy5t->hblank = hblank;
-	if (bpp==8 || bpp==16 || bpp==32)
-		qhy5t->bpp = bpp;
-	if (etime > 0)
+	qhy5t->bpp = 8;
+	if (etime > 1)
 		qhy5t->etime = etime;
+	if (etime > 60000)
+		qhy5t->etime = 60000;
 	qhy5t->image = calloc(2,w*h);//Do it once when call to read_frames, but leaved for compatibility :P
-	qhy5t->imagesize = w*h;
 	qhy5t->framesize=0;
 	return 0;
 }
@@ -503,7 +498,7 @@ void * qhy5t_read_exposure(qhy5t_driver *qhy5t){
 	return actual;
 }
 
-void write_ppm(void * data, int width, int height, char *filename){
+void write_pgm(void * data, int width, int height, char *filename){
 	FILE *h = fopen(filename, "w");
 	dprintf("writing file %s w x h =  %dx%d\n", filename, width, height);
 	fprintf(h, "P5\n"); //ppm header
@@ -652,7 +647,7 @@ int main (int argc,char **argv){
 		sprintf(imagename, "%s%05d.%s", basename, i, fmt);
 		printf("Capturing %s\n", imagename);
 		data = qhy5t_read_exposure(qhy5t);
-		write_ppm(data, qhy5t->width, qhy5t->height, imagename);
+		write_pgm(data, qhy5t->width, qhy5t->height, imagename);
 	}while(i++ != count);
 	qhy5t_stopcapture(qhy5t);
 	qhy5t_close(qhy5t);

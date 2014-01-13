@@ -63,6 +63,8 @@
 enum color {red, green1, green2, blue};
 
 void * debayer_data_jwack(void * data, void * dest, qhy5t_driver * qhy5t){
+	//target and source should point to different buffers.
+	
 	uint16_t i, j, h, w;
 	uint8_t * tgt;
 	uint8_t * src;
@@ -111,7 +113,7 @@ void * debayer_data_jwack(void * data, void * dest, qhy5t_driver * qhy5t){
 	}
 	return dest;
 }
-void write_ppm6(void * data, qhy5t_driver * qhy5t, char *basename){
+void write_ppm(void * data, qhy5t_driver * qhy5t, char *basename){
 	FILE *fp;
 	unsigned int width = qhy5t->width;
 	unsigned int height = qhy5t->height;
@@ -127,8 +129,8 @@ void write_ppm6(void * data, qhy5t_driver * qhy5t, char *basename){
 	fclose(fp);
 }
 
-void writeppm(void * data, qhy5t_driver * qhy5t, char *basename){
-	write_ppm(data, qhy5t->width, qhy5t->height, basename);
+void writeimage(void * data, qhy5t_driver * qhy5t, char *basename){
+	write_pgm(data, qhy5t->width, qhy5t->height, basename);
 }
 
 void printerror( int status)
@@ -275,7 +277,7 @@ int main (int argc, char *argv[]){
 	void * debdata = NULL;
 	void * darkframe = NULL;
 	
-	void (*writefunction)(void *, qhy5t_driver *, char *) = writeppm;
+	void (*writefunction)(void *, qhy5t_driver *, char *) = writeimage;
 	
 	int write=0;
 	/*Parsing main arguments*/

@@ -35,7 +35,7 @@
 
 /******************************************************
 ******* Device handling (locate, open, close)**********/
-typedef struct  {
+typedef struct {
 	usb_dev_handle *handle;
 	uint16_t width;
 	uint16_t height;
@@ -51,7 +51,6 @@ typedef struct  {
 	uint8_t bpp;
 	uint16_t etime;
 	void *image;
-	size_t imagesize;
 	size_t framesize;
 }qhy5t_driver;
 /** Device handling (locate, open, close)**********/
@@ -80,6 +79,6 @@ int qhy5_timed_move(qhy5t_driver *qhy5t, int direction, int duration_msec);
 
 /** END Device handling (locate, open, close)******/
 
-void write_ppm(void * data, int width, int height, char *filename);
+void write_pgm(void * data, int width, int height, char *filename);
 
 
