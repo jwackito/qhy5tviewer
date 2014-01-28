@@ -317,7 +317,7 @@ reprogram:	if (memcmp(buffer, keep,64)) {
 		//ULONG Value = ETIME+1000;
 		//WinUsb_SetPipePolicy( usbHandle, BulkIn, PIPE_TRANSFER_TIMEOUT, 4, &Value );
 		uint32_t t = (uint32_t)ETIME+1000;
-		ctrl_msg(qhy5t->handle, 0xC0, 0x55, 0x0000, 0x0063, (uint8_t*)&t, 0x0004);
+		ctrl_msg(qhy5t->handle, READ, 0x55, 0x0000, 0x0063, (uint8_t*)&t, 0x0004);
 		usleep(5000);
 		memcpy(keep , buffer, 64 );
 	}
@@ -384,13 +384,6 @@ void qhy5t_start_exposure(qhy5t_driver * qhy5t){
 	pthread_create( &expo_thread, NULL, qhy5t_exposure_thread, (void*) qhy5t);
 }
 
-/*int qhy5t_set_gain(int gain){
-	gain = gain%1001;
-	gain = (gain * 8192)/1000;
-	if (gain >= 32) {gain += 32;}
-	if (gain >= 128) {gain += 128;}
-	return gain&(~0x80A0);
-}*/
 int qhy5t_set_gain(int gain){
 //de los valores recomendados del datasheet del sensor
 	if (gain <= 0){
@@ -580,7 +573,6 @@ int main (int argc,char **argv){
 		case 'g':
 			gain = strtol(optarg, NULL, 0);
 			//Gain calculations for QHY5T from the datasheet
-			//gain value must be a per mil
 			gain = qhy5t_set_gain(gain);
 			break;
 		case 'b':

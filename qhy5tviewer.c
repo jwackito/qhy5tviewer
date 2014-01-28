@@ -31,7 +31,6 @@
 #include "qhy5t.h"
 #include <getopt.h>
 #include <fitsio.h>
-#include "imanal.h"
 //#define __VERSION__ "0.1"
 
 //pix position relative in source image [rgrg...gbgb]
@@ -145,6 +144,7 @@ void printerror( int status)
 
 void write_fits(void * array, qhy5t_driver * qhy5t, char *fname )
 {
+	//Thanks to Giampiero Spezzano who contributed this code that I modified.
 	fitsfile *fptr;
 	int status;
 	unsigned int width = qhy5t->width;
@@ -153,20 +153,6 @@ void write_fits(void * array, qhy5t_driver * qhy5t, char *fname )
 	char filename[256] = "!";	// ! for deleting existing file and create new
 	strncat(filename,fname,255);
 	
-/*	//forcing 16bits image for fits
-	printf("puto el que lee %d\n",qhy5t->bpp);
-	uint16_t * array;
-	if (qhy5t->bpp == 8){
-		int i;
-		uint8_t * im = data;
-		array = malloc(width*height*2);
-		for (i=0; i < width*height; i++){
-			array[i*2] = (uint16_t)(im[i]<<7);
-		}
-	}
-	else{
-		array = data;
-	}*/
 	
 	int bitpix = BYTE_IMG; /* 8-bit unsigned short pixel values       */
 	long naxis = 2; /* 2-dimensional image RAW image */
@@ -229,7 +215,7 @@ void show_help(char * progname){
 	printf("%s [options]\n", progname);
 	printf("\t\t-x/--width <width>                specify width (default: 800)\n");
 	printf("\t\t-y/--height <height>              specify height (default: 600)\n");
-	printf("\t\t-g/--gain <gain>                  specify gain [0-128] (default 1)\n");
+	printf("\t\t-g/--gain <gain>                  specify gain [0-167] (default 1)\n");
 	printf("\t\t-b/--binning <bin>                specify the binning mode (2x2 or default: 1x1)\n");
 	printf("\t\t-t/--exposure <exposure>          specify exposure in msec (default: 100)\n");
 	printf("\t\t-o/--file <filename>              specify filename to write to (if none, SDL output only)\n");
@@ -243,8 +229,8 @@ void show_help(char * progname){
 	exit(0);
 }
 
-void qhy5tviewer_exit(SDL_Surface * hello, qhy5t_driver * qhy5t){
-	SDL_FreeSurface(hello);
+void qhy5tviewer_exit(SDL_Surface * frame, qhy5t_driver * qhy5t){
+	SDL_FreeSurface(frame);
 	SDL_Quit();
 	qhy5t_stopcapture(qhy5t);
 	qhy5t_close(qhy5t);
@@ -301,7 +287,7 @@ int main (int argc, char *argv[]){
 	while (1) {
 		char c;
 		c = getopt_long (argc, argv, 
-                     "t:g:b:k:x:y:do:c:m:hfX",
+                     "t:g:b:k:x:y:do:hfX",
                      long_options, NULL);
 		if(c == EOF)
 			break;
@@ -331,7 +317,6 @@ int main (int argc, char *argv[]){
 			break;
 		case 'o':
 			strncpy(basename, optarg, 255);
-			write=0;
 			break;
 		case 'd':
 			debug = 1;
@@ -369,7 +354,7 @@ int main (int argc, char *argv[]){
 		exit(1);
 	}
 	//SDL artifacts initialization...
-	SDL_Surface * hello = NULL;
+	SDL_Surface * frame = NULL;
 	SDL_Surface * screen = NULL;
 	SDL_Surface * xair = NULL;
 	SDL_Event event;
@@ -380,12 +365,12 @@ int main (int argc, char *argv[]){
 		printf("Couldn't set video mode: %s\n", SDL_GetError());
 		exit(-1);
 	}
-	hello = SDL_SetVideoMode( width, height, 24, SDL_SWSURFACE);
-	if(!hello){
+	frame = SDL_SetVideoMode( width, height, 24, SDL_SWSURFACE);
+	if(!frame){
 		printf("Couldn't set video mode: %s\n", SDL_GetError());
 		exit(-1);
 	}
-	//SDL_SetPalette(hello, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
+	//SDL_SetPalette(frame, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
 	
 	//Camera and capture settings and initialization...
 	if((qhy5t = qhy5t_open())== NULL) {
@@ -467,7 +452,7 @@ int main (int argc, char *argv[]){
 		//display an image in the surface.
 		data = qhy5t_read_exposure(qhy5t);
 		if (data == NULL){
-			qhy5tviewer_exit(hello, qhy5t);
+			qhy5tviewer_exit(frame, qhy5t);
 			return 1;
 		}
 		
@@ -475,10 +460,10 @@ int main (int argc, char *argv[]){
 			//substract(data, darkframe);
 		}
 		
-		SDL_LockSurface(hello);
 		debdata = debayer_data_jwack(data, debdata, qhy5t);
-		hello->pixels = debdata;
-		SDL_UnlockSurface(hello);
+		SDL_LockSurface(frame);
+		frame->pixels = debdata;
+		SDL_UnlockSurface(frame);
 		
 		if (paintstars){
 			
@@ -490,7 +475,7 @@ int main (int argc, char *argv[]){
 			writefunction(data, qhy5t, imagename);
 			count++;
 		}
-		if (SDL_BlitSurface(hello, NULL, screen, NULL)){
+		if (SDL_BlitSurface(frame, NULL, screen, NULL)){
 			printf("%s\n", SDL_GetError());
 		}
 		
@@ -510,6 +495,6 @@ int main (int argc, char *argv[]){
 		}
 		SDL_Flip(screen);
 	}
-	qhy5tviewer_exit(hello, qhy5t);
+	qhy5tviewer_exit(frame, qhy5t);
 	return 0;
 }
