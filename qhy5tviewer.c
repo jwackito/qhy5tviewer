@@ -175,15 +175,15 @@ void write_fits(void * array, qhy5t_driver * qhy5t, char *fname )
 		printerror(status);
 	}
 	fpixel = 1;                               /* first pixel to write      */
-	nelements = naxes[0] * naxes[1];          /* number of pixels to write *///y ACA??? cuantos pixels escribo?
-	/* write the array of unsigned integers to the FITS file */
+	nelements = naxes[0] * naxes[1];          /* number of pixels to write */
+	/* write the array of unsigned bytes to the FITS file */
 	if (fits_write_img(fptr, TBYTE, fpixel, nelements, array, &status)){
 		printerror(status);
 	}
-	if (fits_update_key(fptr, TSTRING, "SOFTWARE", "qhy5tviewer","", &status)){
+	if (fits_update_key(fptr, TSTRING, "PROGRAM", "qhy5tviewer","", &status)){
 		printerror(status);
 	}
-	if (fits_update_key(fptr, TSTRING, "CAMERA", "QHY5T","", &status)){
+	if (fits_update_key(fptr, TSTRING, "INSTRUME", "QHY5T camera","", &status)){
 		printerror(status);
 	}
 	if (fits_close_file(fptr, &status)){
