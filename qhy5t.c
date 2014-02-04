@@ -109,7 +109,7 @@ qhy5t_driver *qhy5t_open(){
 	usb_init();
 	//uint8_t reg[64]={0};
 	if ((handle = qhy5t_locate(0x1618, 0x0910))==NULL){
-		printf("Could not open the QHY5 device\n");
+		printf("Could not open the QHY5T device\n");
 		return NULL;
 	}
 	qhy5t = calloc(sizeof(qhy5t_driver), 1);
