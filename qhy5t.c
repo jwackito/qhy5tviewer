@@ -117,7 +117,7 @@ qhy5t_driver *qhy5t_open(){
 	return qhy5t;
 }
 
-int qhy5t_stopcapture(qhy5t_driver * qhy5t){
+int qhy5t_stop_capture(qhy5t_driver * qhy5t){
 	int error=0;
 	usb_bulk_write(qhy5t->handle, BULKOUTEP, "0", 1, 5000);
 	//pthread_mutex_lock(&m2);
@@ -191,7 +191,7 @@ int qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, ui
 	qhy5t->framesize=0;
 	return 0;
 }
-int qhy5t_programcamera(qhy5t_driver *qhy5t, int reprogram){
+int qhy5t_program_camera(qhy5t_driver *qhy5t, int reprogram){
 	static uint8_t buffer[64];
 	static uint8_t keep[64];
 	
@@ -368,7 +368,7 @@ void * qhy5t_exposure_thread(void * ptr){
 int qhy5t_reconnect(qhy5t_driver * qhy5t){
 	printf("Reconnecting\n");
 	ctrl_msg(qhy5t->handle, WRITE, 0xA0, 0xE600, 0, (uint8_t *)"1", 1);
-	usleep(500);
+	usleep(3000);
 	ctrl_msg(qhy5t->handle, WRITE, 0xA0, 0xE600, 0, (uint8_t *)"0", 1);
 	usleep(3000);
 	return 0;

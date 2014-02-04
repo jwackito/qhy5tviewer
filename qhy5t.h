@@ -63,13 +63,13 @@ int qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, ui
 
 int qhy5t_reconnect(qhy5t_driver * qhy5t);
 
-int qhy5t_programcamera(qhy5t_driver *qhy5t, int reprogram);
+int qhy5t_program_camera(qhy5t_driver *qhy5t, int reprogram);
 
 void qhy5t_start_exposure(qhy5t_driver * qhy5t);
 
 void * qhy5t_read_exposure(qhy5t_driver *qhy5t);
 
-int qhy5t_stopcapture(qhy5t_driver * qhy5t);
+int qhy5t_stop_capture(qhy5t_driver * qhy5t);
 
 int qhy5t_close(qhy5t_driver *qhy5t);
 

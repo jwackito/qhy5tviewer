@@ -59,6 +59,10 @@
 #define max(a,b) (a)>(b)?(a):(b)
 #define min(a,b) (a)<(b)?(a):(b)
 
+#ifndef VERSION
+#define VERSION "-20140204"
+#endif
+
 enum color {red, green1, green2, blue};
 
 void * debayer_data_jwack(void * data, void * dest, qhy5t_driver * qhy5t){
@@ -180,10 +184,10 @@ void write_fits(void * array, qhy5t_driver * qhy5t, char *fname )
 	if (fits_write_img(fptr, TBYTE, fpixel, nelements, array, &status)){
 		printerror(status);
 	}
-	if (fits_update_key(fptr, TSTRING, "PROGRAM", "qhy5tviewer","", &status)){
+	if (fits_update_key(fptr, TSTRING, "PROGRAM", "qhy5tviewer", VERSION, &status)){
 		printerror(status);
 	}
-	if (fits_update_key(fptr, TSTRING, "INSTRUME", "QHY5T camera","", &status)){
+	if (fits_update_key(fptr, TSTRING, "INSTRUME", "QHY5T camera"," 3Mpx, 3.2x3.2 micron pixel", &status)){
 		printerror(status);
 	}
 	if (fits_close_file(fptr, &status)){
@@ -232,7 +236,7 @@ void show_help(char * progname){
 void qhy5tviewer_exit(SDL_Surface * frame, qhy5t_driver * qhy5t){
 	SDL_FreeSurface(frame);
 	SDL_Quit();
-	qhy5t_stopcapture(qhy5t);
+	qhy5t_stop_capture(qhy5t);
 	qhy5t_close(qhy5t);
 	exit(1);
 }
@@ -379,7 +383,7 @@ int main (int argc, char *argv[]){
 	}
 	qhy5t_set_params(qhy5t, width, height, offw, offh, bin, gain, gain, gain, gain, vblank, hblank, bpp, etime);
 	qhy5t_reconnect(qhy5t);
-	qhy5t_programcamera(qhy5t, 0);
+	qhy5t_program_camera(qhy5t, 0);
 	qhy5t_start_exposure(qhy5t);
 	
 	debdata = calloc(qhy5t->framesize*3,1);
