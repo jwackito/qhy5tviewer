@@ -129,9 +129,9 @@ int qhy5t_stop_capture(qhy5t_driver * qhy5t){
 	return error;
 }
 
-int qhy5t_close(qhy5t_driver *qhy5t){
+void qhy5t_close(qhy5t_driver *qhy5t){
 	if(! qhy5t)
-		return 0;
+		return;
 	qhy5t_reconnect(qhy5t);
 	/** freed by stopcapture()
 	 if(qhy5t->image)
@@ -139,7 +139,7 @@ int qhy5t_close(qhy5t_driver *qhy5t){
 	if(qhy5t->handle)
 		usb_close(qhy5t->handle);
 	free(qhy5t);
-	return 0;
+	return;
 }
 /** END Device handling (locate, open, close)**********
 *******************************************************/
@@ -176,10 +176,10 @@ void qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, u
 	qhy5t->offw =  (x >= 0 && x <=(2048 - w)) ? x : (2048 - w) / 2;
 	qhy5t->offh =  (y >= 0 && y <=(1536 - h)) ? y : (1536 - h) / 2;
 	qhy5t->binmode = 1;
-	qhy5t->gg1 = (gg1 > 0 && gg1 < 168) ? gg1 : 1;
-	qhy5t->gb = (gb > 0 && gb < 168) ? gb : 1;
-	qhy5t->gr = (gr > 0 && gr < 168) ? gr : 1;
-	qhy5t->gg2 = (gg2 > 0 && gg2 < 168) ? gg2 : 1;
+	qhy5t->gg1 = (gg1 > 0 && gg1 < 0x7860) ? gg1 : 1;
+	qhy5t->gb = (gb > 0 && gb < 0x7860) ? gb : 1;
+	qhy5t->gr = (gr > 0 && gr < 0x7860) ? gr : 1;
+	qhy5t->gg2 = (gg2 > 0 && gg2 < 0x7860) ? gg2 : 1;
 	qhy5t->vblank = vblank;
 	qhy5t->hblank = hblank;
 	qhy5t->bpp = 8;

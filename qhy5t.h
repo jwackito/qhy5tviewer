@@ -69,7 +69,7 @@ void * qhy5t_read_exposure(qhy5t_driver *qhy5t);
 
 int qhy5t_stop_capture(qhy5t_driver * qhy5t);
 
-int qhy5t_close(qhy5t_driver *qhy5t);
+void qhy5t_close(qhy5t_driver *qhy5t);
 
 int qhy5_timed_move(qhy5t_driver *qhy5t, int direction, int duration_msec);
 
