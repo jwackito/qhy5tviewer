@@ -382,7 +382,6 @@ int main (int argc, char *argv[]){
 		exit(-1);
 	}
 	qhy5t_set_params(qhy5t, width, height, offw, offh, bin, gain, gain, gain, gain, vblank, hblank, bpp, etime);
-	qhy5t_reconnect(qhy5t);
 	qhy5t_program_camera(qhy5t, 0);
 	qhy5t_start_exposure(qhy5t);
 	

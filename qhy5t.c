@@ -63,7 +63,7 @@ pthread_t expo_thread;
 static void * buffer[2];
 
 int ctrl_msg(usb_dev_handle *handle, unsigned char request_type, unsigned char request, unsigned int value, unsigned int index, uint8_t *data, unsigned char len);
-
+void qhy5t_reconnect(qhy5t_driver * qhy5t);
 /******************************************************
 ******* Device handling (locate, open, close)**********/
 //private
@@ -312,6 +312,7 @@ int qhy5t_program_camera(qhy5t_driver *qhy5t, int reprogram){
 	
 	//We only write the info if something change
 reprogram:	if (memcmp(buffer, keep,64)) {
+		qhy5t_reconnect(qhy5t); //reconnect before program the camera registers
 		ctrl_msg(qhy5t->handle, WRITE, 0x11, 0, 0, buffer, 64);
 		//ULONG Value = ETIME+1000;
 		//WinUsb_SetPipePolicy( usbHandle, BulkIn, PIPE_TRANSFER_TIMEOUT, 4, &Value );

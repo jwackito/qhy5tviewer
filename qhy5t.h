@@ -61,8 +61,6 @@ void qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, u
 					uint16_t gg1, uint16_t gb, uint16_t gr, uint16_t gg2, uint16_t vblank, uint16_t hblank,
 					uint8_t bpp, uint16_t etime);
 
-void qhy5t_reconnect(qhy5t_driver * qhy5t);
-
 int qhy5t_program_camera(qhy5t_driver *qhy5t, int reprogram);
 
 void qhy5t_start_exposure(qhy5t_driver * qhy5t);
