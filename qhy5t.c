@@ -168,7 +168,7 @@ int ctrl_msg(usb_dev_handle *handle, unsigned char request_type, unsigned char r
 	}*/
 	return result;
 }
-int qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, uint16_t y, uint8_t bin, 
+void qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, uint16_t y, uint8_t bin, 
 					uint16_t gg1, uint16_t gb, uint16_t gr, uint16_t gg2, uint16_t vblank, uint16_t hblank, uint8_t bpp, uint16_t etime){
 
 	w = qhy5t->width = (w >= 4 && w <=2048) ? w : 2048;
@@ -189,7 +189,6 @@ int qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, ui
 		qhy5t->etime = 60000;
 	qhy5t->image = calloc(2,w*h);//Do it once when call to read_frames, but leaved for compatibility :P
 	qhy5t->framesize=0;
-	return 0;
 }
 int qhy5t_program_camera(qhy5t_driver *qhy5t, int reprogram){
 	static uint8_t buffer[64];
@@ -365,13 +364,12 @@ void * qhy5t_exposure_thread(void * ptr){
 	return NULL;
 }
 
-int qhy5t_reconnect(qhy5t_driver * qhy5t){
+void qhy5t_reconnect(qhy5t_driver * qhy5t){
 	printf("Reconnecting\n");
 	ctrl_msg(qhy5t->handle, WRITE, 0xA0, 0xE600, 0, (uint8_t *)"1", 1);
 	usleep(3000);
 	ctrl_msg(qhy5t->handle, WRITE, 0xA0, 0xE600, 0, (uint8_t *)"0", 1);
 	usleep(3000);
-	return 0;
 }
 
 void qhy5t_start_exposure(qhy5t_driver * qhy5t){

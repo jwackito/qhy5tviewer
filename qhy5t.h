@@ -57,11 +57,11 @@ typedef struct {
 
 qhy5t_driver *qhy5t_open();
 
-int qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, uint16_t y, uint8_t bin, 
+void qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, uint16_t y, uint8_t bin, 
 					uint16_t gg1, uint16_t gb, uint16_t gr, uint16_t gg2, uint16_t vblank, uint16_t hblank,
 					uint8_t bpp, uint16_t etime);
 
-int qhy5t_reconnect(qhy5t_driver * qhy5t);
+void qhy5t_reconnect(qhy5t_driver * qhy5t);
 
 int qhy5t_program_camera(qhy5t_driver *qhy5t, int reprogram);
 
@@ -73,9 +73,9 @@ int qhy5t_stop_capture(qhy5t_driver * qhy5t);
 
 int qhy5t_close(qhy5t_driver *qhy5t);
 
-void guide_command(qhy5t_driver * qhy5t, uint16_t command, uint16_t pulsetimex, uint16_t pulstimey);
-
 int qhy5_timed_move(qhy5t_driver *qhy5t, int direction, int duration_msec);
+
+int qhy5t_cancel_move(qhy5t_driver * qhy5t);
 
 /** END Device handling (locate, open, close)******/
 
