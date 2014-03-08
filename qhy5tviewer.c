@@ -31,7 +31,6 @@
 #include "qhy5t.h"
 #include <getopt.h>
 #include <fitsio.h>
-#include <sys/time.h>
 //#define __VERSION__ "0.1"
 
 //pix position relative in source image [rgrg...gbgb]
@@ -66,16 +65,6 @@
 
 enum color {red, green1, green2, blue};
 
-double tick(){
-  double sec;
-  struct timeval tv;
-
-  gettimeofday(&tv,NULL);
-  sec = tv.tv_sec + tv.tv_usec/1000000.0;
-  return sec;
-}
-
-
 void * debayer_data_jwack(void * data, void * dest, qhy5t_driver * qhy5t){
 	//target and source should point to different buffers.
 	
@@ -96,7 +85,7 @@ void * debayer_data_jwack(void * data, void * dest, qhy5t_driver * qhy5t){
 	src += w;
 	tgt += w*3;
 	for (j=1; j < h; j++){
-			//*tgt=255;
+			*tgt=255;
 		for (i=1; i <= w; i++){
 			if (i%2 == 0 && j%2 ==0){// red pixel
 				tr = *src;
@@ -271,9 +260,8 @@ int main (int argc, char *argv[]){
 	qhy5t_driver *qhy5t;
 	int crossair=0;
 	unsigned int angle=0;
-	int showfps = 0;
-	static int c1=0, c2=0;//count for fps...
-	double t=0;
+	int paintstars = 0;
+	
 	void * data=NULL;
 	//debayerized data pointer
 	void * debdata = NULL;
@@ -314,6 +302,7 @@ int main (int argc, char *argv[]){
 		case 'g':
 			gain = atoi(optarg);
 			//Gain calculations for QHY5T from the datasheet
+			//gain value must be a per mil
 			gain = qhy5t_set_gain(gain);
 			break;
 		case 'b':
@@ -375,7 +364,6 @@ int main (int argc, char *argv[]){
 	SDL_Event event;
 	int quit=0;
 	SDL_Init(SDL_INIT_EVERYTHING);
-	SDL_WM_SetCaption("qhy5tviwer", "");
 	screen = SDL_SetVideoMode( width, height, 24, SDL_SWSURFACE |SDL_ANYFORMAT);
 	if(!screen){
 		printf("Couldn't set video mode: %s\n", SDL_GetError());
@@ -386,7 +374,6 @@ int main (int argc, char *argv[]){
 		printf("Couldn't set video mode: %s\n", SDL_GetError());
 		exit(-1);
 	}
-	//printf("0x%08x 0x%08x 0x%08x 0x%08x\n", screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, screen->format->Amask);
 	//SDL_SetPalette(frame, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
 	
 	//Camera and capture settings and initialization...
@@ -396,7 +383,7 @@ int main (int argc, char *argv[]){
 	}
 	qhy5t_set_params(qhy5t, width, height, offw, offh, bin, gain, gain, gain, gain, vblank, hblank, bpp, etime);
 	qhy5t_program_camera(qhy5t, 0);
-	qhy5t_start_capture(qhy5t);
+	qhy5t_start_exposure(qhy5t);
 	
 	debdata = calloc(qhy5t->framesize*3,1);
 	while (!quit){
@@ -433,13 +420,8 @@ int main (int argc, char *argv[]){
 					else
 						darkframe == NULL;
 					break;*/
-				case SDLK_v:
-					showfps = !showfps;
-					break;
-				case SDLK_f:
-					if (SDL_WM_ToggleFullScreen(frame)){
-						printf("Couldn't set fulscreen\n");
-					}
+				case SDLK_p:
+					paintstars = !paintstars;
 					break;
 				case SDLK_UP:
 					qhy5t_timed_move(qhy5t, QHY_NORTH, 100);
@@ -486,6 +468,9 @@ int main (int argc, char *argv[]){
 		frame->pixels = debdata;
 		SDL_UnlockSurface(frame);
 		
+		if (paintstars){
+			
+		}
 		
 		if (write){ //always write a raw image, without debayer or any other process
 			sprintf(imagename, "%s%05d.%s", basename, count, fmt);
@@ -497,14 +482,6 @@ int main (int argc, char *argv[]){
 			printf("%s\n", SDL_GetError());
 		}
 		
-		if (showfps){
-			c1++;
-			if (!(c1 % 30)){
-				printf("%f + ", (float)(c1 - c2)/(float)(tick() - t));
-				fflush(stdout);
-				c2 = c1;t = tick();
-			}
-		}
 		
 		if(crossair){
 			xair = load_crossair(angle);
