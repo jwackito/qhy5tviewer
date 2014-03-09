@@ -57,10 +57,10 @@ int debug=0;
 #define BUFWORDR(W) *((uint16_t *)&buffer[bi]) =W ; bi+=2;
 #define BUFDWORD(W) buffer[bi++] = HHSB(W); buffer[bi++] = HSB(W); buffer[bi++] = MSB(W) ;buffer[bi++] = LSB(W)
 
-pthread_mutex_t m1, m2; //mutexes for exposure
+pthread_mutex_t reading, writing; //mutexes for exposure
 pthread_t expo_thread;
 
-static void * buffer[2];
+static void * buffer;
 
 int ctrl_msg(usb_dev_handle *handle, unsigned char request_type, unsigned char request, unsigned int value, unsigned int index, uint8_t *data, unsigned char len);
 void qhy5t_reconnect(qhy5t_driver * qhy5t);
@@ -120,12 +120,12 @@ qhy5t_driver *qhy5t_open(){
 int qhy5t_stop_capture(qhy5t_driver * qhy5t){
 	int error=0;
 	usb_bulk_write(qhy5t->handle, BULKOUTEP, "0", 1, 5000);
-	//pthread_mutex_lock(&m2);
+	/*pthread_mutex_lock(&writing);
 	error = pthread_cancel(expo_thread);
-	pthread_mutex_unlock(&m1);
+	pthread_mutex_unlock(&reading);
 	qhy5t_read_exposure(qhy5t);
 	if (buffer[0] != NULL) free(buffer[0]);
-	if (buffer[1] != NULL) free(buffer[1]);
+	if (buffer[1] != NULL) free(buffer[1]);*/
 	return error;
 }
 
@@ -133,7 +133,7 @@ void qhy5t_close(qhy5t_driver *qhy5t){
 	if(! qhy5t)
 		return;
 	qhy5t_reconnect(qhy5t);
-	/** freed by stopcapture()
+	/** freed by read_exposure()
 	 if(qhy5t->image)
 		free(qhy5t->image);*/
 	if(qhy5t->handle)
@@ -193,8 +193,8 @@ void qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, u
 int qhy5t_program_camera(qhy5t_driver *qhy5t, int reprogram){
 	static uint8_t buffer[64];
 	static uint8_t keep[64];
-	
 	int bi = 0;
+	
 	//temp variables
 	uint32_t w,h,x,y;
 	
@@ -329,35 +329,32 @@ void * qhy5t_exposure_thread(void * ptr){
 	qhy5t_driver * qhy5t = (qhy5t_driver *)ptr;
 	int result;
 	int timeout = qhy5t->etime + 5000;
-	char * buffer = NULL;
 	uint32_t preblank = (331+38); //ONLY WORKS FOR 1x1 BIN
 	uint32_t totalwidth = (qhy5t->width + 2)+(qhy5t->hblank)+preblank;
 	int i;
-	buffer = calloc(2,qhy5t->framesize);
+	uint8_t *localbuffer = NULL;
+	localbuffer = calloc(2,qhy5t->framesize);
 	while (1){
-		dprintf("Reading %08X bytes\n", (unsigned int)qhy5t->framesize);
-		dprintf("Locked mutex2\n");
-		pthread_mutex_lock(&m2);
-		result = usb_bulk_read(qhy5t->handle, BULKINEP, buffer, qhy5t->framesize, timeout);
-		dprintf("Readed  %08X bytes\n", result);
+		result = usb_bulk_read(qhy5t->handle, BULKINEP, localbuffer, qhy5t->framesize, timeout);
+		dprintf("Locked writing in ET\n");
+		pthread_mutex_lock(&writing);
 		if (result != qhy5t->framesize) {
 			printf("Failed to read image. Got: %08X, expected %08X\n", result, (unsigned int)qhy5t->framesize);
-			dprintf("Unlocked mutex1\n");
-			pthread_mutex_unlock(&m1);
-			qhy5t->image = NULL;
-			break;
+			free(buffer);
+			buffer = NULL;
 		}
 		else{//mapping the frame
-			char *pb=buffer;
-			void * pi = qhy5t->image;
+			char *pb=localbuffer;
+			void * pi = buffer;
 			for (i=0; i< qhy5t->height; i++){
 				memcpy(pi, pb, qhy5t->width);
 				pi+=qhy5t->width;
 				pb+=totalwidth;
 			}
-			dprintf("Unlocked mutex1\n");
-			pthread_mutex_unlock(&m1);
 		}
+		dprintf("Unocked reading in ET\n");
+		pthread_mutex_unlock(&reading);
+		if (buffer == NULL) break;
 	}
 	printf("Cancelling exposure\n");
 	//qhy5t_stopcapture(qhy5t);
@@ -373,13 +370,12 @@ void qhy5t_reconnect(qhy5t_driver * qhy5t){
 	usleep(3000);
 }
 
-void qhy5t_start_exposure(qhy5t_driver * qhy5t){
+void qhy5t_start_capture(qhy5t_driver * qhy5t){
 	dprintf("Creating buffers\n");
-	buffer[0] = calloc(2 * qhy5t->width * qhy5t->height,1);
-	buffer[1] = calloc(2 * qhy5t->width * qhy5t->height,1);
-	dprintf("Locked mutex1 in main\n");
-	pthread_mutex_lock(&m1);
-	printf("Starting exposure\n");
+	buffer = calloc(2 * qhy5t->width * qhy5t->height,1);
+	dprintf("Locked reading in SE\n");
+	pthread_mutex_lock(&reading);
+	dprintf("Starting exposure\n");
 	pthread_create( &expo_thread, NULL, qhy5t_exposure_thread, (void*) qhy5t);
 }
 
@@ -475,19 +471,18 @@ int qhy5t_cancel_move(qhy5t_driver * qhy5t){
 * Image manipution and mapping ************************/
 
 void * qhy5t_read_exposure(qhy5t_driver *qhy5t){
-
-	void * actual = NULL;
-	static int i=0;
-
-	dprintf("Locked mutex1 in readexp\n");
-	pthread_mutex_lock(&m1);
-	if (qhy5t->image == NULL) return NULL;
-	actual = qhy5t->image;
-	i++;
-	qhy5t->image = buffer[i%2];
-	dprintf("Unlocked mutex2 in readexp\n");
-	pthread_mutex_unlock(&m2);
-	return actual;
+	dprintf("Locked reading in RE\n");
+	pthread_mutex_lock(&reading);
+	if (buffer == NULL){
+		free(qhy5t->image);
+		return qhy5t->image = NULL;
+	}
+	memcpy(qhy5t->image, buffer, (qhy5t->width*qhy5t->height));
+	//printf("Locked reading in RE\n");
+	//pthread_mutex_lock(&reading);
+	dprintf("Unlocked writing in RE\n");
+	pthread_mutex_unlock(&writing);
+	return qhy5t->image;
 }
 
 void write_pgm(void * data, int width, int height, char *filename){
