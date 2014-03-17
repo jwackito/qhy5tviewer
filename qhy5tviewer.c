@@ -221,20 +221,28 @@ SDL_Surface * load_crossair(unsigned int angle){
 
 void show_help(char * progname){
 	printf("%s [options]\n", progname);
-	printf("\t\t-x/--width <width>                specify width (default: 800)\n");
-	printf("\t\t-y/--height <height>              specify height (default: 600)\n");
-	printf("\t\t-g/--gain <gain>                  specify gain [0-167] (default 1)\n");
-	printf("\t\t-b/--binning <bin>                specify the binning mode (2x2 or default: 1x1)\n");
-	printf("\t\t-t/--exposure <exposure>          specify exposure in msec (default: 100)\n");
-	printf("\t\t-o/--file <filename>              specify filename to write to (if none, SDL output only)\n");
-	printf("\t\t-c/--count <count>                specify how many sequential images to take. If -c isn't especified,\n");
-	printf("\t\t                                  then the output file will be exactly <filename> and will be a fits file. \n"); 
-	printf("\t\t                                  (This is for QHYImager compatibility). Else, will be <filename>0000x.<fmt>\n");
-	printf("\t\t-m/--format <fmt>                 specify the file type (default: pgm, else fits file will be created.)\n");
-	printf("\t\t-d/--debug                        enable debugging\n");
-	printf("\t\t-F//--fits                        output to FITS file (default PGM)\n");
-	printf("\t\t-h//--help                         show this message\n");
-	
+	printf("\t-x/--width <width>              - specify width (default: 800)\n");
+	printf("\t-y/--height <height>            - specify height (default: 600)\n");
+	printf("\t-g/--gain <gain>                - specify gain [0-167] (default 1)\n");
+	printf("\t-b/--binning <bin>              - specify the binning mode (2x2 or default: 1x1)\n");
+	printf("\t-t/--exposure <exposure>        - specify exposure in msec (default: 100)\n");
+	printf("\t-o/--file <filename>            - specify filename to write to (if none, SDL output only)\n");
+	printf("\t-c/--count <count>              - specify how many sequential images to take. If -c isn't especified,\n");
+	printf("\t                                - then the output file will be exactly <filename> and will be a fits file. \n"); 
+	printf("\t                                - (This is for QHYImager compatibility). Else, will be <filename>0000x.<fmt>\n");
+	printf("\t-m/--format <fmt>               - specify the file type (default: pgm, else fits file will be created.)\n");
+	printf("\t-d/--debug                      - enable debugging\n");
+	printf("\t-F//--fits                      - output to FITS file (default PGM)\n");
+	printf("\t-h//--help                      - show this message\n\n");
+	printf("Interactive commands\n");
+	printf("\tQ\t\t - Exit program\n");
+	printf("\tS\t\t - Start/Stop image grabbing\n");
+	printf("\tF\t\t - Start/Stop fullscreen\n");
+	printf("\tV\t\t - Show/Hide FPSs data\n");
+	printf("\tX\t\t - Show/Hide the crossair\n");
+	printf("\tplus/minus\t - Rotate the crossair\n");
+	printf("\tArrow keys\t - Send guiding commands\n");
+	printf("\tSpace\t \t - Stop all guiding commands\n");
 	exit(0);
 }
 
