@@ -32,7 +32,7 @@
 #include <getopt.h>
 #include <fitsio.h>
 #include <sys/time.h>
-//#define __VERSION__ "0.1"
+#define __QHY5TVIEWER_VERSION__ "0.2"
 
 //pix position relative in source image [rgrg...gbgb]
 #define SRCTL(ptr) (*(ptr-w-1))
@@ -61,7 +61,7 @@
 #define min(a,b) (a)<(b)?(a):(b)
 
 #ifndef VERSION
-#define VERSION "-20140204"
+#define VERSION "-20140317"
 #endif
 
 enum color {red, green1, green2, blue};
@@ -76,7 +76,7 @@ double tick(){
 }
 
 
-void * debayer_data_jwack(void * data, void * dest, qhy5t_driver * qhy5t){
+void * debayer_data(void * data, void * dest, qhy5t_driver * qhy5t){
 	//target and source should point to different buffers.
 	
 	uint16_t i, j, h, w;
@@ -219,13 +219,6 @@ SDL_Surface * load_crossair(unsigned int angle){
 	return crosses[angle];
 }
 
-void * makedark (qhy5t_driver * qhy5t){
-	void * dark = NULL;
-	printf("");
-}
-
-//void substract(const void * data, void * darkframe);
-
 void show_help(char * progname){
 	printf("%s [options]\n", progname);
 	printf("\t\t-x/--width <width>                specify width (default: 800)\n");
@@ -237,10 +230,11 @@ void show_help(char * progname){
 	printf("\t\t-c/--count <count>                specify how many sequential images to take. If -c isn't especified,\n");
 	printf("\t\t                                  then the output file will be exactly <filename> and will be a fits file. \n"); 
 	printf("\t\t                                  (This is for QHYImager compatibility). Else, will be <filename>0000x.<fmt>\n");
-	printf("\t\t-m/--format <fmt>                 specify the file type (default: ppm, else fits file will be created.)\n");
+	printf("\t\t-m/--format <fmt>                 specify the file type (default: pgm, else fits file will be created.)\n");
 	printf("\t\t-d/--debug                        enable debugging\n");
-	printf("\t\t-f//--fits                        output to FITS file (default PPM)\n");
+	printf("\t\t-F//--fits                        output to FITS file (default PGM)\n");
 	printf("\t\t-h//--help                         show this message\n");
+	
 	exit(0);
 }
 
@@ -264,7 +258,7 @@ int main (int argc, char *argv[]){
 	unsigned int vblank = 25;
 	unsigned int gain = 1;
 	unsigned int etime = 100;
-	char fmt[10] = "ppm";
+	char fmt[10] = "pgm";
 	char basename[256] = "image";
 	char imagename[256];
 	int debug=0;
@@ -277,7 +271,6 @@ int main (int argc, char *argv[]){
 	void * data=NULL;
 	//debayerized data pointer
 	void * debdata = NULL;
-	void * darkframe = NULL;
 	
 	void (*writefunction)(void *, qhy5t_driver *, char *) = writeimage;
 	
@@ -295,7 +288,7 @@ int main (int argc, char *argv[]){
 		{"count", required_argument, NULL, 'c'},
 		{"format", required_argument, NULL, 'm'},
 		{"help", no_argument , NULL, 'h'},
-		{"fits", no_argument , NULL, 'f'},
+		{"fits", no_argument , NULL, 'F'},
 		{"crossair", no_argument , NULL, 'X'},
 		{0, 0, 0, 0}
 	};
@@ -303,7 +296,7 @@ int main (int argc, char *argv[]){
 	while (1) {
 		char c;
 		c = getopt_long (argc, argv, 
-                     "t:g:b:k:x:y:do:hfX",
+                     "t:g:b:k:x:y:do:hFX",
                      long_options, NULL);
 		if(c == EOF)
 			break;
@@ -386,9 +379,6 @@ int main (int argc, char *argv[]){
 		printf("Couldn't set video mode: %s\n", SDL_GetError());
 		exit(-1);
 	}
-	//printf("0x%08x 0x%08x 0x%08x 0x%08x\n", screen->format->Rmask, screen->format->Gmask, screen->format->Bmask, screen->format->Amask);
-	//SDL_SetPalette(frame, SDL_LOGPAL|SDL_PHYSPAL, colors, 0, 256);
-	
 	//Camera and capture settings and initialization...
 	if((qhy5t = qhy5t_open())== NULL) {
 		printf("Could not open the QHY5T device\n");
@@ -416,6 +406,7 @@ int main (int argc, char *argv[]){
 				case SDLK_q:
 					quit = 1;
 					break;
+				//crossair related commands
 				case SDLK_MINUS:
 					crossair = 1;
 					angle = (angle - 1) % 256;
@@ -427,35 +418,28 @@ int main (int argc, char *argv[]){
 				case SDLK_x:
 					crossair = !(crossair);
 					break;
-				/*case SDLK_k://Toggle dark frame substraction
-					if (darkframe == NULL)
-						darkframe = makedark(qhy5t);
-					else
-						darkframe == NULL;
-					break;*/
+				//toggle view fps
 				case SDLK_v:
 					showfps = !showfps;
 					break;
+				//toggle fullscreen
 				case SDLK_f:
 					if (SDL_WM_ToggleFullScreen(frame)){
-						printf("Couldn't set fulscreen\n");
+						printf("Couldn't set fullscreen\n");
 					}
 					break;
+				//guiding related commands
 				case SDLK_UP:
 					qhy5t_timed_move(qhy5t, QHY_NORTH, 100);
-					//guide_command(qhy5t, QHY_NORTH, 1, 1);
 					break;
 				case SDLK_DOWN:
 					qhy5t_timed_move(qhy5t, QHY_SOUTH, 100);
-					//guide_command(qhy5t, QHY_SOUTH, 1, 1);
 					break;
 				case SDLK_RIGHT:
 					qhy5t_timed_move(qhy5t, QHY_EAST, 100);
-					//guide_command(qhy5t, QHY_EAST, 1, 1);
 					break;
 				case SDLK_LEFT:
 					qhy5t_timed_move(qhy5t, QHY_WEST, 100);
-					//guide_command(qhy5t, QHY_WEST, 1, 1);
 					break;
 				case SDLK_SPACE:
 					qhy5t_cancel_move(qhy5t);
@@ -477,11 +461,7 @@ int main (int argc, char *argv[]){
 			return 1;
 		}
 		
-		if (darkframe != NULL){
-			//substract(data, darkframe);
-		}
-		
-		debdata = debayer_data_jwack(data, debdata, qhy5t);
+		debdata = debayer_data(data, debdata, qhy5t);
 		SDL_LockSurface(frame);
 		frame->pixels = debdata;
 		SDL_UnlockSurface(frame);
@@ -500,7 +480,7 @@ int main (int argc, char *argv[]){
 		if (showfps){
 			c1++;
 			if (!(c1 % 30)){
-				printf("%f + ", (float)(c1 - c2)/(float)(tick() - t));
+				printf("FPS = %f", (float)(c1 - c2)/(float)(tick() - t));
 				fflush(stdout);
 				c2 = c1;t = tick();
 			}

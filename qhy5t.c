@@ -25,8 +25,6 @@
 //To build standalone app:
 //gcc -DQHY5T_TEST -Wall -o qhy5t qhy5t.c -lusb -lpthread
 
-
-
 #include "qhy5t.h"
 
 #define dprintf if(debug > 0) printf
@@ -107,7 +105,6 @@ qhy5t_driver *qhy5t_open(){
 	struct usb_dev_handle *handle;
 	qhy5t_driver *qhy5t;
 	usb_init();
-	//uint8_t reg[64]={0};
 	if ((handle = qhy5t_locate(0x1618, 0x0910))==NULL){
 		printf("Could not open the QHY5T device\n");
 		return NULL;
@@ -120,12 +117,6 @@ qhy5t_driver *qhy5t_open(){
 int qhy5t_stop_capture(qhy5t_driver * qhy5t){
 	int error=0;
 	usb_bulk_write(qhy5t->handle, BULKOUTEP, "0", 1, 5000);
-	/*pthread_mutex_lock(&writing);
-	error = pthread_cancel(expo_thread);
-	pthread_mutex_unlock(&reading);
-	qhy5t_read_exposure(qhy5t);
-	if (buffer[0] != NULL) free(buffer[0]);
-	if (buffer[1] != NULL) free(buffer[1]);*/
 	return error;
 }
 
@@ -163,9 +154,6 @@ int ctrl_msg(usb_dev_handle *handle, unsigned char request_type, unsigned char r
 	dprintf("\n");
 	dprintf("msj# %d: Bytes writen = %d\n", countmsg, result);
 	countmsg++;
-	/*if (result < 0){
-		exit(-1);
-	}*/
 	return result;
 }
 void qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, uint16_t y, uint8_t bin, 
@@ -187,7 +175,7 @@ void qhy5t_set_params(qhy5t_driver *qhy5t, uint16_t w, uint16_t h, uint16_t x, u
 		qhy5t->etime = etime;
 	if (etime > 60000)
 		qhy5t->etime = 60000;
-	qhy5t->image = calloc(2,w*h);//Do it once when call to read_frames, but leaved for compatibility :P
+	qhy5t->image = calloc(2,w*h);
 	qhy5t->framesize=0;
 }
 int qhy5t_program_camera(qhy5t_driver *qhy5t, int reprogram){
@@ -314,8 +302,6 @@ int qhy5t_program_camera(qhy5t_driver *qhy5t, int reprogram){
 reprogram:	if (memcmp(buffer, keep,64)) {
 		qhy5t_reconnect(qhy5t); //reconnect before program the camera registers
 		ctrl_msg(qhy5t->handle, WRITE, 0x11, 0, 0, buffer, 64);
-		//ULONG Value = ETIME+1000;
-		//WinUsb_SetPipePolicy( usbHandle, BulkIn, PIPE_TRANSFER_TIMEOUT, 4, &Value );
 		uint32_t t = (uint32_t)ETIME+1000;
 		ctrl_msg(qhy5t->handle, READ, 0x55, 0x0000, 0x0063, (uint8_t*)&t, 0x0004);
 		usleep(5000);
@@ -357,7 +343,6 @@ void * qhy5t_exposure_thread(void * ptr){
 		if (buffer == NULL) break;
 	}
 	printf("Cancelling exposure\n");
-	//qhy5t_stopcapture(qhy5t);
 	pthread_exit(NULL);
 	return NULL;
 }
@@ -380,7 +365,7 @@ void qhy5t_start_capture(qhy5t_driver * qhy5t){
 }
 
 int qhy5t_set_gain(int gain){
-//de los valores recomendados del datasheet del sensor
+//from data in datasheet MT9T001
 	if (gain <= 0){
 		return 0x0008;
 	}
@@ -413,7 +398,6 @@ void guide_command(qhy5t_driver * qhy5t, uint16_t cmd, uint16_t pulsetimex, uint
 	duration[0] = pulsetimex;
 	duration[1] = pulsetimey;
 	
-	//camera_write(0x10,(char *)&info[0],8,(uint16_t)GC,0);
 	int status = ctrl_msg(qhy5t->handle, WRITE, 0x10, 0, cmd, (char *)&duration, sizeof(duration));
 	printf("Status = %d\ncommand = %d\n", status, cmd);
 }
@@ -478,8 +462,6 @@ void * qhy5t_read_exposure(qhy5t_driver *qhy5t){
 		return qhy5t->image = NULL;
 	}
 	memcpy(qhy5t->image, buffer, (qhy5t->width*qhy5t->height));
-	//printf("Locked reading in RE\n");
-	//pthread_mutex_lock(&reading);
 	dprintf("Unlocked writing in RE\n");
 	pthread_mutex_unlock(&writing);
 	return qhy5t->image;
@@ -488,9 +470,9 @@ void * qhy5t_read_exposure(qhy5t_driver *qhy5t){
 void write_pgm(void * data, int width, int height, char *filename){
 	FILE *h = fopen(filename, "w");
 	dprintf("writing file %s w x h =  %dx%d\n", filename, width, height);
-	fprintf(h, "P5\n"); //ppm header
-	fprintf(h, "%d %d\n", width, height);//ppm header
-	fprintf(h, "255\n");//ppm header
+	fprintf(h, "P5\n"); //pgm header
+	fprintf(h, "%d %d\n", width, height);//pgm header
+	fprintf(h, "255\n");//pgm header
 	fwrite(data, width*height, 1, h);
 	fclose(h);
 }
