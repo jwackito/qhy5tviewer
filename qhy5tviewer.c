@@ -96,7 +96,6 @@ void * debayer_data(void * data, void * dest, qhy5t_driver * qhy5t){
 	src += w;
 	tgt += w*3;
 	for (j=1; j < h; j++){
-			//*tgt=255;
 		for (i=1; i <= w; i++){
 			if (i%2 == 0 && j%2 ==0){// red pixel
 				tr = *src;
@@ -123,7 +122,6 @@ void * debayer_data(void * data, void * dest, qhy5t_driver * qhy5t){
 			*tgt++ = (uint8_t)tg;
 			*tgt++ = (uint8_t)tr;
 		}
-		
 	}
 	return dest;
 }
@@ -226,12 +224,9 @@ void show_help(char * progname){
 	printf("\t-g/--gain <gain>                - specify gain [0-167] (default 1)\n");
 	printf("\t-b/--binning <bin>              - specify the binning mode (2x2 or default: 1x1)\n");
 	printf("\t-t/--exposure <exposure>        - specify exposure in msec (default: 100)\n");
-	printf("\t-o/--file <filename>            - specify filename to write to (if none, SDL output only)\n");
-	printf("\t-c/--count <count>              - specify how many sequential images to take. If -c isn't especified,\n");
-	printf("\t                                - then the output file will be exactly <filename> and will be a fits file. \n"); 
-	printf("\t                                - (This is for QHYImager compatibility). Else, will be <filename>0000x.<fmt>\n");
-	printf("\t-m/--format <fmt>               - specify the file type (default: pgm, else fits file will be created.)\n");
+	printf("\t-o/--file <filename>            - specify filename to write to\n");
 	printf("\t-d/--debug                      - enable debugging\n");
+	printf("\t-X/--crossair                   - enable crossair\n");
 	printf("\t-F//--fits                      - output to FITS file (default PGM)\n");
 	printf("\t-h//--help                      - show this message\n\n");
 	printf("Interactive commands\n");
@@ -293,8 +288,6 @@ int main (int argc, char *argv[]){
 		{"height", required_argument, NULL, 'y'},
 		{"debug", required_argument, NULL, 'd'},
 		{"file", required_argument, NULL, 'o'},
-		{"count", required_argument, NULL, 'c'},
-		{"format", required_argument, NULL, 'm'},
 		{"help", no_argument , NULL, 'h'},
 		{"fits", no_argument , NULL, 'F'},
 		{"crossair", no_argument , NULL, 'X'},
@@ -337,17 +330,10 @@ int main (int argc, char *argv[]){
 		case 'd':
 			debug = 1;
 			break;
-		case 'c':
-			count = strtol(optarg, NULL, 0);
-			if ((count%2)==0) count--;
-			break;
-		case 'm':
-			strncpy(fmt, optarg, 10);
-			break;
 		case 'h':
 			show_help(argv[0]);
 			break;
-		case 'f':
+		case 'F':
 			writefunction = write_fits;
 			strncpy(fmt, "fits",4);
 			break;
@@ -376,7 +362,7 @@ int main (int argc, char *argv[]){
 	SDL_Event event;
 	int quit=0;
 	SDL_Init(SDL_INIT_EVERYTHING);
-	SDL_WM_SetCaption("qhy5tviwer", "");
+	SDL_WM_SetCaption("qhy5tviewer", "");
 	screen = SDL_SetVideoMode( width, height, 24, SDL_SWSURFACE |SDL_ANYFORMAT);
 	if(!screen){
 		printf("Couldn't set video mode: %s\n", SDL_GetError());
