@@ -76,6 +76,10 @@ int qhy5_timed_move(qhy5t_driver *qhy5t, int direction, int duration_msec);
 
 int qhy5t_cancel_move(qhy5t_driver * qhy5t);
 
+int qhy5t_set_gain(int gain);
+
+int qhy5t_timed_move(qhy5t_driver *qhy5t, int direction, int duration_msec);
+
 /** END Device handling (locate, open, close)******/
 
 void write_pgm(void * data, int width, int height, char *filename);
