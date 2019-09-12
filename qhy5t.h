@@ -23,15 +23,16 @@
   file called LICENSE.
 *******************************************************************************/
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <usb.h>
 #include <pthread.h>
-
 
 #define QHY_EAST  0x10
 #define QHY_NORTH 0x20
 #define QHY_SOUTH 0x40
 #define QHY_WEST  0x80
+#define MAX( a, b ) ( ( a > b) ? a : b )
 
 /******************************************************
 ******* Device handling (locate, open, close)**********/
