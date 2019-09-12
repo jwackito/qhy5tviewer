@@ -1,0 +1,5 @@
+cmake_minimum_required (VERSION 2.6)
+project (qhy5tviewer)
+include_directories("${PROJECT_BINARY_DIR}")
+add_executable(qhy5tviewer qhy5t.c qhy5tviewer.c)
+target_link_libraries (qhy5tviewer SDL pthread usb cfitsio SDL_image)
