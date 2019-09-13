@@ -23,15 +23,16 @@
   file called LICENSE.
 *******************************************************************************/
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <usb.h>
 #include <pthread.h>
-
 
 #define QHY_EAST  0x10
 #define QHY_NORTH 0x20
 #define QHY_SOUTH 0x40
 #define QHY_WEST  0x80
+#define MAX( a, b ) ( ( a > b) ? a : b )
 
 /******************************************************
 ******* Device handling (locate, open, close)**********/
@@ -74,6 +75,10 @@ void qhy5t_close(qhy5t_driver *qhy5t);
 int qhy5_timed_move(qhy5t_driver *qhy5t, int direction, int duration_msec);
 
 int qhy5t_cancel_move(qhy5t_driver * qhy5t);
+
+int qhy5t_set_gain(int gain);
+
+int qhy5t_timed_move(qhy5t_driver *qhy5t, int direction, int duration_msec);
 
 /** END Device handling (locate, open, close)******/
 
